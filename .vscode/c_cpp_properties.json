@@ -10,6 +10,9 @@
             "includePath": [
                 "/home/yassine-ahmed-ali/Documents/mqtt_esp/include",
                 "/home/yassine-ahmed-ali/Documents/mqtt_esp/src",
+                "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
+                "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
+                "/home/yassine-ahmed-ali/Documents/mqtt_esp/lib/arduino_mqtt/src",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos",
@@ -206,7 +209,6 @@
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/dio_qspi/include",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/variants/ch_denky",
-                "/home/yassine-ahmed-ali/Documents/mqtt_esp/lib/arduino_mqtt/src",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
@@ -236,8 +238,6 @@
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
-                "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                 "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                 ""
@@ -247,6 +247,9 @@
                 "path": [
                     "/home/yassine-ahmed-ali/Documents/mqtt_esp/include",
                     "/home/yassine-ahmed-ali/Documents/mqtt_esp/src",
+                    "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
+                    "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
+                    "/home/yassine-ahmed-ali/Documents/mqtt_esp/lib/arduino_mqtt/src",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/newlib/platform_include",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos",
@@ -443,7 +446,6 @@
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/dio_qspi/include",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/cores/esp32",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/variants/ch_denky",
-                    "/home/yassine-ahmed-ali/Documents/mqtt_esp/lib/arduino_mqtt/src",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/ArduinoOTA/src",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/AsyncUDP/src",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src",
@@ -473,8 +475,6 @@
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/USB/src",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/Update/src",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
-                    "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src",
-                    "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFiClientSecure/src",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/WiFiProv/src",
                     "/home/yassine-ahmed-ali/.platformio/packages/framework-arduinoespressif32/libraries/Wire/src",
                     ""

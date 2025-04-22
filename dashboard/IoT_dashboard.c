@@ -59,12 +59,13 @@ void toggle_light_callback()
 #define TOPIC_LIGHT "topic_light"
 #define TOPIC_STORAGE_LEVEL "topic_storage_level"
 #define TOPIC_LIGHT_LEVEL "topic_light_level"
-#define QOS 0
+#define QOS 1
 #define TIMEOUT 10000L
 
 MQTTClient client;
-MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
 MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+
 volatile MQTTClient_deliveryToken deliveredtoken;
 gthread_t thread_mqtt;
 bool mqtt_running = true;
@@ -86,7 +87,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
         long value = strtol((char *)message->payload, NULL, 10);
         if (storage_meter)
         {
-            GooeyMeter_Update(storage_meter, value);
+            GooeyMeter_Update(storage_meter, (long)  100 - ((float) value / 47) * 100);
             char storage_level[20];
             snprintf(storage_level, sizeof(storage_level), "%ld%% full!", value);
             GooeyList_UpdateItem(alert_list, 1, "storage Status", storage_level);
@@ -124,16 +125,17 @@ int setup_mqtt_connection()
         printf("Failed to create client, return code %d\n", rc);
         return rc;
     }
- 
+
     if ((rc = MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, delivered)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to set callbacks, return code %d\n", rc);
         MQTTClient_destroy(&client);
         return rc;
     }
-
     ssl_opts.enableServerCertAuth = 0;
 
+    // declare values for ssl options, here we use only the ones necessary for TLS, but you can optionally define a lot more
+    // look here for an example: https://github.com/eclipse/paho.mqtt.c/blob/master/src/samples/paho_c_sub.c
     ssl_opts.verify = 1;
     ssl_opts.CApath = NULL;
     ssl_opts.keyStore = NULL;
@@ -147,9 +149,10 @@ int setup_mqtt_connection()
     conn_opts.keepAliveInterval = 10;
     conn_opts.cleansession = 1;
     // use your credentials that you created with the cluster
-    conn_opts.username = CLIENTID;
+    conn_opts.username = "dashboard";
     conn_opts.password = "YASSINE2002@**v";
-
+    conn_opts.keepAliveInterval = 20;
+    conn_opts.cleansession = 1;
     if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
         printf("Failed to connect, return code %d\n", rc);
@@ -240,9 +243,9 @@ void initialize_dashboard()
     const int left_col = 20;
     const int meter_size = 120;
 
-    light_meter = GooeyMeter_Create(left_col, 60, meter_size, meter_size, 80, "light");
+    light_meter = GooeyMeter_Create(left_col, 60, meter_size, meter_size, 80, "light", "sun.png");
     toggle_light = GooeyButton_Create("Toggle Light", left_col, 160, meter_size, 30, toggle_light_callback);
-    storage_meter = GooeyMeter_Create(left_col, 250, meter_size, meter_size, 30, "storage");
+    storage_meter = GooeyMeter_Create(left_col, 250, meter_size, meter_size, 30, "storage", "cube.png");
 
     const int middle_col = 180;
     const int plot_width = 300;
