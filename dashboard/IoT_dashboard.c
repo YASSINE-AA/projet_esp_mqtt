@@ -28,23 +28,29 @@ GooeyLabel *login_error_label;
 #define TOPIC_LIGHT "topic_light"
 #define TOPIC_STORAGE_LEVEL "topic_storage_level"
 #define TOPIC_LIGHT_LEVEL "topic_light_level"
+#define TOPIC_TEMPERATURE "topic_temperature"
+#define TOPIC_HUMIDITY "topic_humidity"
+#define TOPIC_LED "topic_led_status"
 #define QOS 1
 #define TIMEOUT 10000L
 
 /* Global Variables */
 GooeyWindow *dashboard;
-GooeyMeter *light_meter, *storage_meter;
+GooeyMeter *temp_meter, *storage_meter, *humidity_meter;
 GooeyPlot *light_plot;
 GooeyButton *toggle_light, *theme_toggle;
 GooeyList *alert_list;
 GooeyTheme *dark_theme;
 GooeyCanvas *canvas, *login_canvas;
 GooeyTabs *tabs;
-GooeyImage *login_image, *login_button_icon;
+GooeyImage *login_image, *login_button_icon, *login_bg;
 GooeyTextbox *username_textbox, *password_textbox;
 GooeyLabel *login_label;
 glps_audio_stream *stream;
-
+GooeyLabel *login_slogan;
+GooeyLabel *login_slogan_desc;
+GooeyButton *login_learn_more_button;
+GooeyLabel *lights_label;
 bool dark_mode = false;
 bool light_on = false;
 bool mqtt_running = true;
@@ -145,6 +151,10 @@ void hide_login()
     GooeyWidget_MakeVisible(login_label, false);
     GooeyWidget_MakeVisible(username_textbox, false);
     GooeyWidget_MakeVisible(password_textbox, false);
+    GooeyWidget_MakeVisible(login_bg, false);
+    GooeyWidget_MakeVisible(login_slogan, false);
+    GooeyWidget_MakeVisible(login_slogan_desc, false);
+    GooeyWidget_MakeVisible(login_learn_more_button, false);
 }
 
 void light_slider_callback(long slider_value)
@@ -206,8 +216,8 @@ int setup_mqtt_connection(const char *username, const char *password)
 void subscribe_to_topics()
 {
     int rc;
-    char *topics[] = {TOPIC_STORAGE_LEVEL, TOPIC_LIGHT};
-    int qos[] = {QOS, QOS};
+    char *topics[] = {TOPIC_STORAGE_LEVEL, TOPIC_LIGHT, TOPIC_HUMIDITY, TOPIC_TEMPERATURE, TOPIC_LED};
+    int qos[] = {QOS, QOS, QOS, QOS, QOS};
     int topic_count = sizeof(topics) / sizeof(topics[0]);
 
     if ((rc = MQTTClient_subscribeMany(client, topic_count, topics, qos)) != MQTTCLIENT_SUCCESS)
@@ -238,7 +248,7 @@ void mqtt_cleanup()
         glps_thread_join(thread_mqtt, NULL);
     }
 
-    char *topics[] = {TOPIC_STORAGE_LEVEL, TOPIC_LIGHT};
+    char *topics[] = {TOPIC_STORAGE_LEVEL, TOPIC_LIGHT, TOPIC_TEMPERATURE, TOPIC_HUMIDITY, TOPIC_LED};
     int topic_count = sizeof(topics) / sizeof(topics[0]);
     MQTTClient_unsubscribeMany(client, topic_count, topics);
     MQTTClient_disconnect(client, 10000);
@@ -277,7 +287,33 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
             GooeyList_UpdateItem(alert_list, 0, "Light Status", (char *)message->payload);
         }
     }
-
+    else if (strcmp(topicName, TOPIC_TEMPERATURE) == 0)
+    {
+        if (temp_meter)
+        {
+            GooeyMeter_Update(temp_meter, strtol((char *)message->payload, NULL, 10));
+        }
+    }
+    else if (strcmp(topicName, TOPIC_HUMIDITY) == 0)
+    {
+        if (humidity_meter)
+        {
+            GooeyMeter_Update(humidity_meter, strtol((char *)message->payload, NULL, 10));
+        }
+    }
+    else if (strcmp(topicName, TOPIC_LED) == 0)
+    {
+        if (lights_label)
+        {
+            char light_label_content[20];
+            snprintf(light_label_content, sizeof(light_label_content), "Light %s", (char *)message->payload);
+            GooeyLabel_SetText(lights_label, light_label_content);
+            if(strcmp((char*) message->payload, "ON") == 0) 
+                GooeyLabel_SetColor(lights_label, 0x00FF00);
+            else
+                GooeyLabel_SetColor(lights_label, 0xFF0000);
+        }
+    }
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -297,7 +333,7 @@ void create_dashboard()
     const char *password = GooeyTextbox_GetText(password_textbox);
     if (setup_mqtt_connection(username, password) != MQTTCLIENT_SUCCESS)
     {
-        GooeyLabel_SetText(login_error_label, "Please check credentials.");
+        GooeyLabel_SetText(login_error_label, "Please verify credentials.");
         fprintf(stderr, "Failed to initialize MQTT connection\n");
         return;
     }
@@ -334,34 +370,39 @@ void create_dashboard()
     GooeyLabel *made_with_label = GooeyLabel_Create("Made with Gooey UI ToolKit v1.0.1", 0.3f, 945, 680);
 
     // Create meters
-    light_meter = GooeyMeter_Create(80, 160, 240, 240, 80, "Light", "light_icon.png");
+    temp_meter = GooeyMeter_Create(80, 160, 240, 240, 80, "Temperature", "temp_icon.png");
     storage_meter = GooeyMeter_Create(415, 160, 240, 240, 30, "Storage", "storage_icon.png");
-    GooeyMeter *battery_meter = GooeyMeter_Create(750, 160, 240, 240, 60, "Battery", "battery_icon.png");
-
+    humidity_meter = GooeyMeter_Create(750, 160, 240, 240, 60, "Humidity", "humidity_icon.png");
+    GooeyImage *lights_icon = GooeyImage_Create("light_icon.png", 100, 500, 24, 24, NULL);
+    lights_label = GooeyLabel_Create("Light OFF", 0.3f, 200, 620);
+    GooeyLabel_SetColor(lights_label, 0xFF0000);
     // Create controls
     GooeySlider *light_slider = GooeySlider_Create(100, 520, 500, 0, 100, true, light_slider_callback);
     toggle_light = GooeyButton_Create("Toggle Light", 100, 570, 220, 30, toggle_light_callback);
     GooeyButton *refresh_btn = GooeyButton_Create("Refresh", 380, 570, 220, 30, NULL);
 
     // Add widgets to overview tab
-    GooeyTabs_AddWidget(tabs, 0, light_meter);
+    GooeyTabs_AddWidget(tabs, 0, temp_meter);
     GooeyTabs_AddWidget(tabs, 0, storage_meter);
-    GooeyTabs_AddWidget(tabs, 0, battery_meter);
+    GooeyTabs_AddWidget(tabs, 0, humidity_meter);
     GooeyTabs_AddWidget(tabs, 0, dashboard_bc);
     GooeyTabs_AddWidget(tabs, 0, dashboard_title);
     GooeyTabs_AddWidget(tabs, 0, dashboard_desc);
     GooeyTabs_AddWidget(tabs, 0, light_slider);
     GooeyTabs_AddWidget(tabs, 0, toggle_light);
     GooeyTabs_AddWidget(tabs, 0, refresh_btn);
+    GooeyTabs_AddWidget(tabs, 0, lights_icon);
 
     // Register main widgets
     GooeyWindow_RegisterWidget(dashboard, dashboard_bc);
     GooeyWindow_RegisterWidget(dashboard, dashboard_title);
     GooeyWindow_RegisterWidget(dashboard, dashboard_desc);
     GooeyWindow_RegisterWidget(dashboard, made_with_label);
-    GooeyWindow_RegisterWidget(dashboard, light_meter);
+    GooeyWindow_RegisterWidget(dashboard, temp_meter);
     GooeyWindow_RegisterWidget(dashboard, storage_meter);
-    GooeyWindow_RegisterWidget(dashboard, battery_meter);
+    GooeyWindow_RegisterWidget(dashboard, humidity_meter);
+    GooeyWindow_RegisterWidget(dashboard, lights_icon);
+    GooeyWindow_RegisterWidget(dashboard, lights_label);
 
     // Create system info labels
     GooeyLabel *uptime_label = GooeyLabel_Create("Uptime: 3h 24m", 0.27f, 80, 80);
@@ -400,6 +441,10 @@ void create_dashboard()
     // Add to alerts tab
     GooeyTabs_AddWidget(tabs, 2, alert_list);
     GooeyWindow_RegisterWidget(dashboard, alert_list);
+    GooeyLabel *avatar_message = GooeyLabel_Create("Welcome back, Mouhib", 0.3f, 960, 35);
+    GooeyImage *avatar = GooeyImage_Create("utilisateur.png", 1140, 15, 32, 32, NULL);
+    GooeyWindow_RegisterWidget(dashboard, avatar_message);
+    GooeyWindow_RegisterWidget(dashboard, avatar);
 
     // Start MQTT thread
     glps_thread_create(&thread_mqtt, NULL, mqtt_subscribe_thread, NULL);
@@ -408,15 +453,25 @@ void create_dashboard()
 void create_login()
 {
     login_canvas = GooeyCanvas_Create(60, 60, 1150, 660);
-    GooeyCanvas_DrawRectangle(login_canvas, 375, 90, 300, 400, dashboard->active_theme->widget_base, true, 0.0f, true, 7.0f);
+    GooeyCanvas_DrawRectangle(login_canvas, 675, 90, 300, 400, dashboard->active_theme->widget_base, true, 0.0f, true, 7.0f);
+    login_slogan = GooeyLabel_Create("Build a smarter future.", 0.9f, 40, 250);
+    login_slogan_desc = GooeyLabel_Create("Control & Monitor your workplace.", 0.6f, 40, 295);
+    login_learn_more_button = GooeyButton_Create("Sign me up!", 40, 325, 150, 40, NULL);
+    GooeyLabel_SetColor(login_slogan, 0x000000);
+    GooeyLabel_SetColor(login_slogan_desc, dashboard->active_theme->primary);
 
-    login_image = GooeyImage_Create("utilisateur.png", 535, 110, 96, 96, NULL);
-    login_label = GooeyLabel_Create("Welcome back!", 0.5f, 500, 250);
-    username_textbox = GooeyTextBox_Create(450, 300, 268, 40, "Username", NULL);
-    password_textbox = GooeyTextBox_Create(450, 375, 268, 40, "Password", NULL);
-    login_button_icon = GooeyImage_Create("login_icon.png", 555, 450, 64, 64, create_dashboard);
-    login_error_label = GooeyLabel_Create("", 0.26f, 512, 280);
+    login_image = GooeyImage_Create("utilisateur.png", 835, 110, 96, 96, NULL);
+    login_label = GooeyLabel_Create("Welcome back!", 0.5f, 800, 250);
+    username_textbox = GooeyTextBox_Create(750, 300, 268, 40, "Username", false, NULL);
+    password_textbox = GooeyTextBox_Create(750, 375, 268, 40, "Password", true, NULL);
+    login_button_icon = GooeyImage_Create("login_icon.png", 855, 450, 64, 64, create_dashboard);
+    login_bg = GooeyImage_Create("login_bg.jpg", 0, 60, 900 / 1.5, 1349 / 1.5, NULL);
+    login_error_label = GooeyLabel_Create("", 0.26f, 812, 280);
     GooeyLabel_SetColor(login_error_label, 0xFF0000);
+    GooeyWindow_RegisterWidget(dashboard, login_bg);
+    GooeyWindow_RegisterWidget(dashboard, login_slogan);
+    GooeyWindow_RegisterWidget(dashboard, login_slogan_desc);
+    GooeyWindow_RegisterWidget(dashboard, login_learn_more_button);
     GooeyWindow_RegisterWidget(dashboard, login_error_label);
     GooeyWindow_RegisterWidget(dashboard, login_image);
     GooeyWindow_RegisterWidget(dashboard, login_button_icon);
@@ -436,19 +491,16 @@ void initialize_dashboard()
     dark_theme->primary = 0x0062c4;
 
     // Create header
-    canvas = GooeyCanvas_Create(0, 0, 1400, 60);
+    canvas = GooeyCanvas_Create(0, 0, 1400, 700);
     GooeyCanvas_DrawRectangle(canvas, 0, 0, 1400, 60, dashboard->active_theme->primary, true, 0.0f, false, 10.0f);
     GooeyCanvas_DrawLine(canvas, 0, 60, 1400, 60, dashboard->active_theme->neutral);
 
     GooeyImage *logo_icon = GooeyImage_Create("logo_icon.png", 18, 17, 24, 24, NULL);
     GooeyLabel *title = GooeyLabel_Create("Smart Factory", 0.4f, 65, 35);
     theme_toggle = GooeyButton_Create("Dark Mode OFF", 1350, 10, 130, 40, toggle_dark_mode);
-    GooeyLabel *avatar_message = GooeyLabel_Create("Welcome back, Mouhib", 0.3f, 960, 35);
-    GooeyImage *avatar = GooeyImage_Create("utilisateur.png", 1140, 15, 32, 32, NULL);
-    GooeyWindow_RegisterWidget(dashboard, avatar_message);
+
     GooeyWindow_RegisterWidget(dashboard, logo_icon);
     GooeyWindow_RegisterWidget(dashboard, title);
-    GooeyWindow_RegisterWidget(dashboard, avatar);
     GooeyWindow_RegisterWidget(dashboard, canvas);
 
     create_login();
